@@ -14,7 +14,7 @@ CREATE TABLE Food(
 
 CREATE TABLE Categories(
 	id VARCHAR(400) NOT NULL,
-	name VARCHAR(100) NOT NULL,
+	name VARCHAR(200) NOT NULL,
 	PRIMARY KEY(id)
 	)ENGINE=InnoDB;
 
@@ -26,7 +26,6 @@ CREATE TABLE User(
 	PRIMARY KEY(id)
 	)ENGINE=InnoDB;
 
-ALTER TABLE Food ADD CONSTRAINT fk_food_categories FOREIGN KEY (categories_id) REFERENCES Categories(id);
 ALTER TABLE User ADD CONSTRAINT fk_favorite_id_food FOREIGN KEY (favorite_id) REFERENCES Food(id); -- Not used for now
 
 ALTER TABLE Food ADD FULLTEXT ind_name_food (name);

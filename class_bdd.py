@@ -18,6 +18,6 @@ class Food():
     def __init__(self, data_from_off):    
         """Init taking a dictionnary for argument"""
         #No id attribute because of the auto-increment
-        self.name = data_from_off['name']
-        self.categories_id = data_from_off['categories']
+        self.name = data_from_off['product_name']
+        self.categories_id = data_from_off['categories_tags']
         self.stores = data_from_off['stores']
