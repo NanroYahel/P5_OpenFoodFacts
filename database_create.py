@@ -17,11 +17,12 @@ import class_bdd as cl
 #Constant of this script
 CREATION_FILE = 'bdd_projet_5.sql'
 CATEGORIES_URL = 'https://fr.openfoodfacts.org/categories.json'
-FOOD_URL = 'https://world.openfoodfacts.org/language/french.json'
+FOOD_URL = 'https://world.openfoodfacts.org/country/france/'
 NB_FOOD = 3000
 
 #For now I use this code to connect to mysql but I have to change it to use an config file.
-db = MySQLdb.connect(host='localhost', user='test', passwd='123456', use_unicode=True, charset='utf8')
+db = MySQLdb.connect(host='localhost', user='test', 
+    passwd='123456', use_unicode=True, charset='utf8')
 cursor = db.cursor()
 
 def get_data_from_api(url):
@@ -38,9 +39,17 @@ def fill_categories_table(url):
         # if i < NB_CATEGORIES:
         try:
             category = cl.Categories(data)
-            cursor.execute("INSERT INTO Categories (id, name)"
-                "VALUES (%s, %s)", (category.id, category.name))
-            db.commit()
+            #Only take the french and english categories
+            if 'fr:' in category.id or 'en:' in category.id:
+                #Do not take the categories with 'fr' or 'en' in the name
+                if 'en:' in category.name or 'fr:' in category.name:
+                    pass
+                else:
+                    cursor.execute("INSERT INTO Categories (id, name)"
+                        "VALUES (%s, %s)", (category.id, category.name))
+                    db.commit()
+            else:
+                pass
         #Not take the non utf-8 data
         except db.OperationalError:
             pass
@@ -53,9 +62,6 @@ def fill_food_table(url):
         if i < NB_FOOD:
             try:
                 food = cl.Food(data)
-                print(food.name)
-                print(food.categories_id)
-                print(food.stores)
                 food_properties = (food.name, food.categories_id, food.stores)
                 cursor.execute("INSERT INTO Food "
                     "(name, categories_id, stores)"
@@ -63,6 +69,8 @@ def fill_food_table(url):
                 db.commit()
             #We don't take uncompleted lignes
             except KeyError:
+                pass
+            except db.OperationalError:
                 pass
         i += 1
 
@@ -78,7 +86,9 @@ def main():
     except:
         print('On saut l\'étape on verra si ça change quelque chose')
     fill_categories_table(CATEGORIES_URL)
-    fill_food_table(FOOD_URL)
+    for i in range(1, 10000):
+        url_food = FOOD_URL+str(i)+'.json'
+        fill_food_table(url_food)
     print('Ok normalement c\'est bon !')
 
 
