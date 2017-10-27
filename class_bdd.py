@@ -33,7 +33,8 @@ class Food():
         #Use index when call the class from the programme
         except TypeError:
             self.name = data_from_off[0]
-            self.categories_id = data_from_off[1]
+            self.categories_id = data_from_off[1].replace("'", "").replace(")", "")\
+            .replace("(", "").split(',')
             self.stores = ""
             try:
                 self.stores = data_from_off[2]

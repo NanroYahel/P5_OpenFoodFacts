@@ -35,7 +35,7 @@ def display_categories():
     index = 1
     for i in categories:
         categories_display = cl.Categories(i, index)
-        dict_categories[categories_display.index] = categories_display.name
+        dict_categories[categories_display.index] = (categories_display.name, categories_display.id)
         print(index, " : ", categories_display.name)
         index += 1
     return dict_categories
@@ -46,25 +46,25 @@ def display_products(category):
     dict_product = {}
     category = '%' + category + '%'
     CURSOR.execute('USE openfoodfacts;')
-    CURSOR.execute("""SELECT name, categories_id, stores \
+    CURSOR.execute("""SELECT name, categories_id \
         FROM Food \
-        WHERE categories_id LIKE (%s)""", (category,))
+        WHERE categories_id LIKE %s
+        LIMIT 10""", (category,))
     products = CURSOR.fetchall()
-    print(products)
-    # index = 1
-    # for i in products:
-    #     products_display = cl.Food(i, index)
-    #     dict_product[products_display.index] = products_display.name
-    #     print(index, " : ", products_display.name)
-    #     index += 1
-    # return dict_product
+    index = 1
+    for i in products:
+        products_display = cl.Food(i, index)
+        dict_product[products_display.index] = products_display.name
+        print(index, " : ", products_display.name)
+        index += 1
+    return dict_product
 
 
 def try_user_input():
     """Test the entry of the use"""
     test_input = True
     while test_input is True:
-        input_user = input('Choose a category : ')
+        input_user = input('Make your choice : ')
         try:
             int(input_user)
             test_input = False
@@ -72,14 +72,46 @@ def try_user_input():
         except ValueError:
             print('This is not a valid answer, you need to choose a number...')
 
+
+def search_substitute(product):
+    """Seach a correct substitute of the product in the database"""
+    CURSOR.execute('USE openfoodfacts;')
+    #Try successively all the categories of the product until it find a product containing one of it
+    for i in product.categories_id:
+        search = '%' + i + '%'
+        product_name = product.name
+
+        CURSOR.execute("""SELECT name, categories_id \
+        FROM Food \
+        WHERE categories_id LIKE %s AND name NOT LIKE %s""", (search, product_name))
+
+    substitute = CURSOR.fetchone()
+    return cl.Food(substitute)
+
+
 def main():
     """Main function of the program"""
     dict_categories = display_categories()
     choice = try_user_input()
-    print(dict_categories[choice], type(dict_categories[choice]))
-    # dict_product = display_products(dict_categories[choice])
-    # choice = try_user_input()
-    # print(dict_product[choice])
+    dict_product = display_products(dict_categories[choice][1])
+    choice = try_user_input()
+    print(dict_product[choice])
+    #Show all the datas of the choisen product
+    CURSOR.execute("USE openfoodfacts;")
+    CURSOR.execute("""SELECT name, categories_id, stores \
+        FROM Food
+        WHERE name LIKE %s""", (dict_product[choice],))
+    product = CURSOR.fetchone()
+    product_class = cl.Food(product)
+    print('\n \
+Name : {}, \n \
+Categories : {}, \n \
+Store : {}'.format(product_class.name, product_class.categories_id, product_class.stores))
+    try:
+        substitute = search_substitute(product_class)
+        print(substitute.name, substitute.categories_id)
+    except:
+        print('Sorry, there is no substitute...')
 
 if __name__ == "__main__":
     main()
