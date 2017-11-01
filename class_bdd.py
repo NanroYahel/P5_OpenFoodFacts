@@ -24,20 +24,40 @@ class Food():
     
     def __init__(self, data_from_off, index=None):    
         """Init taking a dictionnary for argument"""
+
         #Use key when creating the database from OFF API
         try:
             #No id attribute because of the auto-increment
             self.name = data_from_off['product_name']
-            self.categories_id = data_from_off['categories_tags']
-            self.stores = data_from_off['stores']
+            #Take the first 3 categories of the product
+            try:
+                self.category_1 = data_from_off['categories_tags'][0]
+            except IndexError:
+                pass
+            try:
+                self.category_2 = data_from_off['categories_tags'][1]
+            except IndexError:
+                self.category_2 = "None"
+            try:
+                self.category_3 = data_from_off['categories_tags'][2]
+            except IndexError:
+                self.category_3 = "None"
+            try:
+                self.stores = data_from_off['stores']
+            except KeyError:
+                self.stores = ""
+        except IndexError:
+            pass
+
         #Use index when call the class from the programme
         except TypeError:
             self.name = data_from_off[0]
-            self.categories_id = data_from_off[1].replace("'", "").replace(")", "")\
-            .replace("(", "").split(',')
+            self.category_1 = data_from_off[1]
+            self.category_2 = data_from_off[2]
+            self.category_3 = data_from_off[3]
             self.stores = ""
             try:
-                self.stores = data_from_off[2]
-            except IndexError: 
+                self.stores = data_from_off[4]
+            except IndexError:
                 pass
             self.index = index
