@@ -46,18 +46,27 @@ class Food():
                 self.stores = data_from_off['stores']
             except KeyError:
                 self.stores = ""
+            try:
+                self.url = data_from_off['url']
+            except KeyError:
+                self.url = "Url not available"
         except IndexError:
             pass
 
         #Use index when call the class from the programme
         except TypeError:
-            self.name = data_from_off[0]
-            self.category_1 = data_from_off[1]
-            self.category_2 = data_from_off[2]
-            self.category_3 = data_from_off[3]
+            self.id = data_from_off[0]
+            self.name = data_from_off[1]
+            self.category_1 = data_from_off[2]
+            self.category_2 = data_from_off[3]
+            self.category_3 = data_from_off[4]
             self.stores = ""
             try:
-                self.stores = data_from_off[4]
+                self.stores = data_from_off[5]
             except IndexError:
                 pass
+            try:
+                self.url = data_from_off[6]
+            except IndexError:
+                self.url = data_from_off[5]
             self.index = index

@@ -11,11 +11,11 @@ import MySQLdb
 
 #import personnal module
 import class_bdd as cl
-
+import config as cfg
 
 #Connect to the bdd
-DB = MySQLdb.connect(host='localhost', user='test', \
-    passwd='123456', use_unicode=True, charset='utf8')
+DB = MySQLdb.connect(host=cfg.mysql['host'], user=cfg.mysql['user'], \
+    passwd=cfg.mysql['passwd'], use_unicode=True, charset='utf8')
 CURSOR = DB.cursor()
 
 
@@ -45,76 +45,70 @@ def select_products(category):
     containing the category chosed by the user"""
     category = '%' + category + '%'
     CURSOR.execute('USE openfoodfacts;')
-    CURSOR.execute("""SELECT name, category_id_1, category_id_2, category_id_3 \
+    CURSOR.execute("""SELECT id, name, category_id_1, category_id_2, category_id_3, stores, url \
         FROM Food \
         WHERE category_id_1 LIKE %s OR category_id_2 LIKE %s OR category_id_3 LIKE %s
         LIMIT 10""", (category, category, category))
     products = CURSOR.fetchall()
     return products
 
-
 def add_favorite(product, substitute):
     """Add the chosen product and his substitute to the TABLE User in the database"""
-    CURSOR.execute('USE openfoodfacts;')
-    CURSOR.execute("""INSERT INTO User (product_id, substitute_id) \
-        VALUES (%s,%s)""", (product.id, substitute.id))
-    DB.commit()
-    print('Favorite saved')
+    print('\n Do you want to save this match as favorite ?')
+    print('1. Yes')
+    print('2. No')
+    choice = try_user_input(2)
+    if choice == 1:
+        CURSOR.execute('USE openfoodfacts;')
+        CURSOR.execute("""INSERT INTO Favorites (product_id, substitute_id) \
+            VALUES (%s,%s)""", (product.id, substitute.id))
+        DB.commit()
+        print('Favorite saved')
+    elif choice == 2:
+        print('Ok, this is not saved')
 
-def display_favorite():
+def show_favorites():
     """Display all the favorites of the user"""
     # for products in Count(requete nb product in the database)
     CURSOR.execute('USE openfoodfacts;')
-    CURSOR.execute("""SELECT product_id \
-        FROM User \
-        INNER JOIN Food ON User.product_id = Food.name""")
+    # CURSOR.execute('SELECT COUNT(*) FROM Favorites;')
+    # nb_favorites = CURSOR.fetchone()
+    CURSOR.execute("""SELECT F1.name as Product, F2.name as Substitute \
+        FROM Favorites \
+        INNER JOIN Food F1 ON Favorites.product_id = F1.id
+        INNER JOIN Food F2 ON Favorites.substitute_id = F2.id""")
     favorites = CURSOR.fetchall()
-    return favorites
-
-def display_substitute(favorite):
-    """Show the substitute associated to the favorite"""
-    CURSOR.execute('USE openfoodfacts;')
-    CURSOR.execute("""SELECT product_id, substitute_id
-        FROM User \
-        INNER JOIN Food ON User.product_id = Food.name
-        INNER JOIN Food ON User.substitute_id = Food.name
-        WHERE User.product_id = %s""", favorite.name)
-    substitute = CURSOR.fetchall()
-    substitute_display = cl.Food(substitute)
-    return substitute_display
-
-def try_user_input():
-    """Test the entry of the use"""
-    test_input = True
-    while test_input is True:
-        input_user = input('Make your choice : ')
-        try:
-            int(input_user)
-            test_input = False
-            return int(input_user)
-        except ValueError:
-            print('This is not a valid answer, you need to choose a number...')
-
+    for i in favorites:
+        print("\n Product : {}, should be substitute by {}.".format(i[0], i[1]))      
 
 def search_substitute(product):
     """Seach a correct substitute of the product in the database"""
     CURSOR.execute('USE openfoodfacts;')
-    #Catch the id of the first category of the product
-    CURSOR.execute(""" SELECT id FROM Categories WHERE name = %s""", (product.category_1,))
-    id_category = CURSOR.fetchone()
+    # #Catch the id of the category of the product
+    product_categories_name = (product.category_1, product.category_2, product.category_3)
+    CURSOR.execute(""" SELECT id FROM Categories WHERE name IN %s""", (product_categories_name,))
+    id_category = CURSOR.fetchall()
     #Make a string with the category, used in the query
-    search = '%' + id_category[0] + '%'
+    search = (id_category[0][0], id_category[1][0], id_category[2][0])
+    #Query
     product_name = product.name
-    CURSOR.execute("""SELECT name, category_id_1, category_id_2, category_id_3 \
+    CURSOR.execute("""SELECT Food.id, Food.name, C1.name as category_1, C2.name as category_2, \
+        C3.name as category_3, stores, url \
     FROM Food \
-    WHERE category_id_1 LIKE %s OR category_id_2 LIKE %s OR category_id_3 LIKE %s \
-    AND name NOT LIKE %s""", (search, search, search, product_name))
-
+    INNER JOIN Categories C1 ON C1.id = Food.category_id_1 \
+    INNER JOIN Categories C2 ON C2.id = Food.category_id_2 \
+    INNER JOIN Categories C3 ON C3.id = Food.category_id_3 \
+    WHERE C1.id IN %s OR C2.id IN %s OR C3.id IN %s \
+    AND Food.name NOT LIKE %s""", (search, search, search, product_name))
     substitute = CURSOR.fetchone()
-    return cl.Food(substitute)
+    try:
+        return cl.Food(substitute)
+    except TypeError:
+        print("Sorry, there is no substitute... 1") #Execpion when there is only the chosen product in the category
 
-def display_products(products):
+def display_products_list(products):
     """Use the result of the products selection function and display it"""
+    print('\n Select a product : ')
     dict_product = {}
     index = 1
     for i in products:
@@ -124,38 +118,95 @@ def display_products(products):
         index += 1
     return dict_product
 
-def main():
-    """Main function of the program"""
-    dict_categories = select_categories()
-    choice = try_user_input()
+def try_user_input(number_of_choice):
+    """Test the entry of the use"""
+    test_input = True
+    while test_input is True:
+        input_user = input('Make your choice : ')
+        try:
+            int(input_user)
+            if int(input_user) <= 0 or int(input_user) > number_of_choice:
+                print('Please select a number in the list.')
+            else:
+                test_input = False
+                return int(input_user)
+        except ValueError:
+            print('This is not a valid answer, you need to choose a number...')
 
-    dict_product = display_products(select_products(dict_categories[choice][1]))
-    choice = try_user_input()
+
+def find_substitute():
+    """Part of the programme where the user chose a product in a list
+    and return a substitute for this product"""
+    #Display a list of 10 categories in which the user has to chose one
+    dict_product = {}
+    while len(dict_product) == 0:
+        print('\n Select a category : \n')
+        dict_categories = select_categories()
+        choice = try_user_input(len(dict_categories))
+        #Display a list of 10 (maximum) products contained in the chosen category
+        #Use has to chose one product
+        dict_product = display_products_list(select_products(dict_categories[choice][1]))
+        if len(dict_product) == 0:
+            print('\n There is no product for this category... \n')
+        #Search product until one product is ok with the chosen category
+    choice = try_user_input(len(dict_product))
     print(dict_product[choice])
-    # #Show all the datas of the choisen product
+    product_chosen = extract_product(dict_product[choice])
+    #Display the description of the chosen product
+    print('\n You chosed this product : \n')
+    print_product(product_chosen)
+    #Search a substitute and display it
+    try: 
+        substitute = search_substitute(product_chosen)
+        print('\n You can substitute this product by : \n')
+        print_product(substitute)
+        add_favorite(product_chosen, substitute)
+    except:
+        print('Il y a un bug là')
+
+
+
+def extract_product(product):
+    """Take the name of a product and return an object
+    containing the specifications of this product"""
     CURSOR.execute("USE openfoodfacts;")
-    CURSOR.execute("""SELECT Food.name, C1.name as Category_1, C2.name as Category_2, C3.name as Category_3, Stores
+    CURSOR.execute("""SELECT Food.id, Food.name, C1.name as Category_1, C2.name as Category_2, \
+        C3.name as Category_3, stores, url
         FROM Food
         INNER JOIN Categories C1 ON C1.id = Food.category_id_1 
         INNER JOIN Categories C2 ON C2.id = Food.category_id_2
         INNER JOIN Categories C3 ON C3.id = Food.category_id_3
-        WHERE Food.name LIKE %s
-        LIMIT 10;""", (dict_product[choice],))
+        WHERE Food.name LIKE %s;""", (product,))
     product = CURSOR.fetchone()
     product_class = cl.Food(product)
+    return product_class
+
+
+def print_product(product):
+    """Take a product (object) and print his specifications"""
     print('\n \
 Name : {}, \n \
 Categories : {}, {}, {} \n \
-Store : {}'.format(product_class.name, product_class.category_1, product_class.category_2, product_class.category_3, product_class.stores))
-    try:
-        substitute = search_substitute(product_class)
-        print(substitute.name)
-    except:
-        print('Sorry, there is no substitute...')
-        exit()
-    choice = input('Do you want to add this match to favorites ? (y/n)')
-    add_favorite(product_class, substitute)
+Store : {} \n \
+URL : {}'.format(product.name, product.category_1, product.category_2, \
+    product.category_3, product.stores, product.url))
 
+def main():
+    """Main function of the program"""
+    print('Welcome to OpenFoodFind !')
+    running = True
+    while running is True:
+        print('\n''-------------MAIN MENU-------------')
+        print('1. Find a substitute.')
+        print('2. Show favorites.')
+        print('3. Exit.')
+        choice = try_user_input(3)
+        if choice == 1:
+            find_substitute()
+        elif choice == 2:
+            show_favorites()
+        elif choice == 3:
+            running = False
 
 if __name__ == "__main__":
     main()

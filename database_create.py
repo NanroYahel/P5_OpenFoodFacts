@@ -13,6 +13,7 @@ import requests as req
 
 #import personnal module
 import class_bdd as cl
+import config as cfg
 
 #Constant of this script
 CREATION_FILE = 'bdd_projet_5.sql'
@@ -20,9 +21,9 @@ CATEGORIES_URL = 'https://fr.openfoodfacts.org/categories.json'
 FOOD_URL = 'https://world.openfoodfacts.org/country/france/'
 
 #For now I use this code to connect to mysql but I have to change it to use an config file.
-db = MySQLdb.connect(host='localhost', user='test', 
-    passwd='123456', use_unicode=True, charset='utf8')
-cursor = db.cursor()
+DB = MySQLdb.connect(host=cfg.mysql['host'], user=cfg.mysql['user'], \
+    passwd=cfg.mysql['passwd'], use_unicode=True, charset='utf8')
+CURSOR = DB.cursor()
 
 def get_data_from_api(url):
     """Take an url and return data"""
@@ -44,13 +45,13 @@ def fill_categories_table(url):
                 if 'en:' in category.name or 'fr:' in category.name:
                     pass
                 else:
-                    cursor.execute("INSERT INTO Categories (id, name)"\
+                    CURSOR.execute("INSERT INTO Categories (id, name)"\
                         "VALUES (%s, %s)", (category.id, category.name))
-                    db.commit()
+                    DB.commit()
             else:
                 pass
         #Don't take the non utf-8 data
-        except db.OperationalError:
+        except DB.OperationalError:
             pass
 
 def fill_food_table(url):
@@ -60,20 +61,20 @@ def fill_food_table(url):
         try:
             food = cl.Food(data)
             food_properties = (food.name, food.category_1, food.category_2, \
-             food.category_3, food.stores)
-            cursor.execute("INSERT INTO Food "\
-                "(name, category_id_1, category_id_2, category_id_3, stores)"\
-                "VALUES (%s, %s, %s, %s, %s)", food_properties)
-            db.commit()
+             food.category_3, food.stores, food.url)
+            CURSOR.execute("INSERT INTO Food "\
+                "(name, category_id_1, category_id_2, category_id_3, stores, url)"\
+                "VALUES (%s, %s, %s, %s, %s, %s)", food_properties)
+            DB.commit()
         except KeyError: #Don't take lignes without 'product_name'
             pass
         except AttributeError: #Don't take products with 0 categories
             pass
-        except db.OperationalError: #Don't take the products with encoding error
+        except DB.OperationalError: #Don't take the products with encoding error
             pass
-        except db.IntegrityError: #Don't take the products with an category unknow in the database
+        except DB.IntegrityError: #Don't take the products with an category unknow in the database
             pass
-        except db.DataError: #Pass when product name is too long
+        except DB.DataError: #Pass when product name is too long
             pass
 
 def main():
@@ -81,14 +82,14 @@ def main():
     #Call the sql script to create the database
     file_sql = open(CREATION_FILE, 'r')
     query = " ".join(file_sql.readlines())
-    cursor.execute(query)
+    CURSOR.execute(query)
 
     try:
-        cursor.execute('USE openfoodfacts;')
+        CURSOR.execute('USE openfoodfacts;')
     except:
         print('On saut l\'étape on verra si ça change quelque chose')
     fill_categories_table(CATEGORIES_URL)
-    for i in range(1, 10000): #Take 10000 pages of french data
+    for i in range(1, 10000): #Take 100 pages of french data
         url_food = FOOD_URL+str(i)+'.json'
         fill_food_table(url_food)
     print('Ok normalement c\'est bon !')
