@@ -4,7 +4,7 @@
 """Main script of the P5 programm"""
 
 #import standard module
-from random import randrange as rd
+# from random import randrange as rd
 
 #import pip module
 import MySQLdb
@@ -19,17 +19,22 @@ DB = MySQLdb.connect(host=cfg.mysql['host'], user=cfg.mysql['user'], \
 CURSOR = DB.cursor()
 
 
-def select_categories():
+def select_categories(dict_categories):
     """Show 10 categories"""
-    #Create and dict with the Categories instances
-    dict_categories = {}
-    #Take a random limit for the SQL request
-    limit = rd(0, 2000)
+    #Ask the user for enter a category
+    user_search = ""
+    while user_search == "":
+        user_search = input('Please enter a category you want to find : ')
+        if user_search == "":
+            print("You didn't write anything...")
+        else:
+            format_user_search = "%" +user_search+ "%"
     #SQL request for categories
     CURSOR.execute('USE openfoodfacts;')
     CURSOR.execute("""SELECT id, name \
         FROM Categories \
-        LIMIT 10 OFFSET %s""", (limit,))
+        WHERE name LIKE %s
+        LIMIT 10""", (format_user_search,))
     categories = CURSOR.fetchall()
     #Fill dict_categories with the result of the request
     index = 1
@@ -137,11 +142,16 @@ def try_user_input(number_of_choice):
 def find_substitute():
     """Part of the programme where the user chose a product in a list
     and return a substitute for this product"""
-    #Display a list of 10 categories in which the user has to chose one
+    #Create and dict with the Categories instances
+    dict_categories = {}
     dict_product = {}
+    #Display a list of 10 categories in which the user has to chose one
     while len(dict_product) == 0:
-        print('\n Select a category : \n')
-        dict_categories = select_categories()
+        while dict_categories == {}:
+            select_categories(dict_categories)
+            if dict_categories == {}:
+                print('Sorry, there is no category for this search...')
+                print('Try another.')
         choice = try_user_input(len(dict_categories))
         #Display a list of 10 (maximum) products contained in the chosen category
         #Use has to chose one product
