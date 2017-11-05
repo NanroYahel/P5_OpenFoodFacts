@@ -37,22 +37,18 @@ def fill_categories_table(url):
 
     for data in data_from_api['tags']:
         # if i < NB_CATEGORIES:
-        try:
-            category = cl.Categories(data)
-            #Only take the french and english categories
-            if 'en:' in category.id:
-                #Do not take the categories with 'fr' or 'en' in the name
+        if data['products'] > 300 and 'en:' in data['id']: #Don't take the categories with to few products and
+            try:
+                category = cl.Categories(data)
                 if 'en:' in category.name or 'fr:' in category.name:
                     pass
                 else:
                     CURSOR.execute("INSERT INTO Categories (id, name)"\
                         "VALUES (%s, %s)", (category.id, category.name))
                     DB.commit()
-            else:
+            #Don't take the non utf-8 data
+            except DB.OperationalError:
                 pass
-        #Don't take the non utf-8 data
-        except DB.OperationalError:
-            pass
 
 def fill_food_table(url):
     """Function to fill food tables, with the food data of OFF"""
@@ -88,11 +84,12 @@ def main():
         CURSOR.execute('USE openfoodfacts;')
     except:
         print('On saut l\'étape on verra si ça change quelque chose')
+
     fill_categories_table(CATEGORIES_URL)
-    for i in range(1, 10000): #Take 100 pages of french data
+    for i in range(1, 7200): #7200 is approximatively the number of pages in french
         url_food = FOOD_URL+str(i)+'.json'
         fill_food_table(url_food)
-    print('Ok normalement c\'est bon !')
+    print("Database 'openfoodfacts' successfully created !")
 
 
 if __name__ == "__main__":

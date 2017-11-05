@@ -84,7 +84,7 @@ def show_favorites():
         INNER JOIN Food F2 ON Favorites.substitute_id = F2.id""")
     favorites = CURSOR.fetchall()
     for i in favorites:
-        print("\n Product : {}, should be substitute by {}.".format(i[0], i[1]))      
+        print("\n Product : {}, can be substitute by {}.".format(i[0], i[1]))      
 
 def search_substitute(product):
     """Seach a correct substitute of the product in the database"""
@@ -103,7 +103,7 @@ def search_substitute(product):
     INNER JOIN Categories C1 ON C1.id = Food.category_id_1 \
     INNER JOIN Categories C2 ON C2.id = Food.category_id_2 \
     INNER JOIN Categories C3 ON C3.id = Food.category_id_3 \
-    WHERE C1.id IN %s OR C2.id IN %s OR C3.id IN %s \
+    WHERE (C1.id IN %s OR C2.id IN %s OR C3.id IN %s) \
     AND Food.name NOT LIKE %s""", (search, search, search, product_name))
     substitute = CURSOR.fetchone()
     try:
@@ -158,21 +158,21 @@ def find_substitute():
         dict_product = display_products_list(select_products(dict_categories[choice][1]))
         if len(dict_product) == 0:
             print('\n There is no product for this category... \n')
-        #Search product until one product is ok with the chosen category
+            dict_categories = {}
+    #Search product until one product is ok with the chosen category
     choice = try_user_input(len(dict_product))
     print(dict_product[choice])
     product_chosen = extract_product(dict_product[choice])
     #Display the description of the chosen product
     print('\n You chosed this product : \n')
     print_product(product_chosen)
+
     #Search a substitute and display it
-    try: 
-        substitute = search_substitute(product_chosen)
-        print('\n You can substitute this product by : \n')
-        print_product(substitute)
-        add_favorite(product_chosen, substitute)
-    except:
-        print('Il y a un bug là')
+    substitute = search_substitute(product_chosen)
+    print('\n You can substitute this product by : \n')
+    print_product(substitute)
+    add_favorite(product_chosen, substitute)
+
 
 
 
