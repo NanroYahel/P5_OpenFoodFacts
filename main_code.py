@@ -72,20 +72,6 @@ def add_favorite(product, substitute):
     elif choice == 2:
         print('Ok, this is not saved')
 
-def show_favorites():
-    """Display all the favorites of the user"""
-    # for products in Count(requete nb product in the database)
-    CURSOR.execute('USE openfoodfacts;')
-    # CURSOR.execute('SELECT COUNT(*) FROM Favorites;')
-    # nb_favorites = CURSOR.fetchone()
-    CURSOR.execute("""SELECT F1.name as Product, F2.name as Substitute \
-        FROM Favorites \
-        INNER JOIN Food F1 ON Favorites.product_id = F1.id
-        INNER JOIN Food F2 ON Favorites.substitute_id = F2.id""")
-    favorites = CURSOR.fetchall()
-    for i in favorites:
-        print("\n Product : {}, can be substitute by {}.".format(i[0], i[1]))      
-
 def search_substitute(product):
     """Seach a correct substitute of the product in the database"""
     CURSOR.execute('USE openfoodfacts;')
@@ -109,7 +95,7 @@ def search_substitute(product):
     try:
         return cl.Food(substitute)
     except TypeError:
-        print("Sorry, there is no substitute... 1") #Execpion when there is only the chosen product in the category
+        pass
 
 def display_products_list(products):
     """Use the result of the products selection function and display it"""
@@ -173,7 +159,36 @@ def find_substitute():
     print_product(substitute)
     add_favorite(product_chosen, substitute)
 
+def display_favorites():
+    """Display all the favorites of the user"""
+    #List of favorites used for the function "select_favorite"
+    favorites_dict = {}
+    # for products in Count(requete nb product in the database)
+    CURSOR.execute('USE openfoodfacts;')
+    # CURSOR.execute('SELECT COUNT(*) FROM Favorites;')
+    # nb_favorites = CURSOR.fetchone()
+    CURSOR.execute("""SELECT F1.name as Product, F2.name as Substitute \
+        FROM Favorites \
+        INNER JOIN Food F1 ON Favorites.product_id = F1.id
+        INNER JOIN Food F2 ON Favorites.substitute_id = F2.id""")
+    favorites = CURSOR.fetchall()
+    index = 1
+    for i in favorites:
+        favorite_tuple = (i[0], i[1])
+        print("\n {}. {}, can be substitute by {}.".format(index, \
+            favorite_tuple[0], favorite_tuple[1]))
+        favorites_dict[index] = favorite_tuple
+    print('Select a number for more details.')
+    select_favorite(favorites_dict)
 
+def select_favorite(favorites_dict):
+    """Display the information of the product and the substitute"""
+    choice = try_user_input(len(favorites_dict))
+    product = extract_product(favorites_dict[choice][0])
+    substitute = extract_product(favorites_dict[choice][1])
+    print_product(product)
+    print('\n You can substitute this product by : \n')
+    print_product(substitute)
 
 
 def extract_product(product):
@@ -214,7 +229,7 @@ def main():
         if choice == 1:
             find_substitute()
         elif choice == 2:
-            show_favorites()
+            display_favorites()
         elif choice == 3:
             running = False
 
