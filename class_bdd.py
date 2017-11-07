@@ -43,6 +43,14 @@ class Food():
             except IndexError:
                 self.category_3 = "None"
             try:
+                self.category_4 = data_from_off['categories_tags'][3]
+            except IndexError:
+                self.category_4 = "None"
+            try:
+                self.category_5 = data_from_off['categories_tags'][4]
+            except IndexError:
+                self.category_5 = "None"
+            try:
                 self.stores = data_from_off['stores']
             except KeyError:
                 self.stores = ""
@@ -60,13 +68,15 @@ class Food():
             self.category_1 = data_from_off[2]
             self.category_2 = data_from_off[3]
             self.category_3 = data_from_off[4]
+            self.category_4 = data_from_off[5]
+            self.category_5 = data_from_off[6]
             self.stores = ""
             try:
-                self.stores = data_from_off[5]
+                self.stores = data_from_off[7]
             except IndexError:
                 pass
             try:
-                self.url = data_from_off[6]
+                self.url = data_from_off[8]
             except IndexError:
-                self.url = data_from_off[5]
+                self.url = data_from_off[7]
             self.index = index

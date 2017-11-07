@@ -50,10 +50,12 @@ def select_products(category):
     containing the category chosed by the user"""
     category = '%' + category + '%'
     CURSOR.execute('USE openfoodfacts;')
-    CURSOR.execute("""SELECT id, name, category_id_1, category_id_2, category_id_3, stores, url \
+    CURSOR.execute("""SELECT id, name, category_id_1, category_id_2, category_id_3, \
+        category_id_4, category_id_5, stores, url \
         FROM Food \
-        WHERE category_id_1 LIKE %s OR category_id_2 LIKE %s OR category_id_3 LIKE %s
-        LIMIT 10""", (category, category, category))
+        WHERE category_id_1 LIKE %s OR category_id_2 LIKE %s OR category_id_3 LIKE %s \
+        OR category_id_4 LIKE %s OR category_id_5 LIKE %s
+        LIMIT 10""", (category, category, category, category, category))
     products = CURSOR.fetchall()
     return products
 
@@ -76,21 +78,25 @@ def search_substitute(product):
     """Seach a correct substitute of the product in the database"""
     CURSOR.execute('USE openfoodfacts;')
     # #Catch the id of the category of the product
-    product_categories_name = (product.category_1, product.category_2, product.category_3)
+    product_categories_name = (product.category_1, product.category_2, product.category_3, \
+        product.category_4, product.category_5)
     CURSOR.execute(""" SELECT id FROM Categories WHERE name IN %s""", (product_categories_name,))
     id_category = CURSOR.fetchall()
     #Make a string with the category, used in the query
-    search = (id_category[0][0], id_category[1][0], id_category[2][0])
+    search = (id_category[0][0], id_category[1][0], id_category[2][0], id_category[3][0],\
+     id_category[4][0])
     #Query
     product_name = product.name
     CURSOR.execute("""SELECT Food.id, Food.name, C1.name as category_1, C2.name as category_2, \
-        C3.name as category_3, stores, url \
+        C3.name as category_3, C4.name as category_4, C5.name as category_5, stores, url \
     FROM Food \
     INNER JOIN Categories C1 ON C1.id = Food.category_id_1 \
     INNER JOIN Categories C2 ON C2.id = Food.category_id_2 \
     INNER JOIN Categories C3 ON C3.id = Food.category_id_3 \
-    WHERE (C1.id IN %s OR C2.id IN %s OR C3.id IN %s) \
-    AND Food.name NOT LIKE %s""", (search, search, search, product_name))
+    INNER JOIN Categories C4 ON C4.id = Food.category_id_4 \
+    INNER JOIN Categories C5 ON C5.id = Food.category_id_5 \
+    WHERE (C1.id IN %s OR C2.id IN %s OR C3.id IN %s OR C4.id IN %s OR C5.id IN %s) \
+    AND Food.name NOT LIKE %s""", (search, search, search, search, search, product_name))
     substitute = CURSOR.fetchone()
     try:
         return cl.Food(substitute)
@@ -147,7 +153,6 @@ def find_substitute():
             dict_categories = {}
     #Search product until one product is ok with the chosen category
     choice = try_user_input(len(dict_product))
-    print(dict_product[choice])
     product_chosen = extract_product(dict_product[choice])
     #Display the description of the chosen product
     print('\n You chosed this product : \n')
@@ -178,6 +183,7 @@ def display_favorites():
         print("\n {}. {}, can be substitute by {}.".format(index, \
             favorite_tuple[0], favorite_tuple[1]))
         favorites_dict[index] = favorite_tuple
+        index += 1
     print('Select a number for more details.')
     select_favorite(favorites_dict)
 
@@ -195,12 +201,14 @@ def extract_product(product):
     """Take the name of a product and return an object
     containing the specifications of this product"""
     CURSOR.execute("USE openfoodfacts;")
-    CURSOR.execute("""SELECT Food.id, Food.name, C1.name as Category_1, C2.name as Category_2, \
-        C3.name as Category_3, stores, url
+    CURSOR.execute("""SELECT Food.id, Food.name, C1.name AS Category_1, C2.name AS Category_2, \
+        C3.name AS Category_3, C4.name AS Category_4, C5.name AS Category_5, stores, url
         FROM Food
-        INNER JOIN Categories C1 ON C1.id = Food.category_id_1 
+        INNER JOIN Categories C1 ON C1.id = Food.category_id_1
         INNER JOIN Categories C2 ON C2.id = Food.category_id_2
         INNER JOIN Categories C3 ON C3.id = Food.category_id_3
+        INNER JOIN Categories C4 ON C4.id = Food.category_id_4
+        INNER JOIN Categories C5 ON C5.id = Food.category_id_5
         WHERE Food.name LIKE %s;""", (product,))
     product = CURSOR.fetchone()
     product_class = cl.Food(product)
@@ -211,10 +219,10 @@ def print_product(product):
     """Take a product (object) and print his specifications"""
     print('\n \
 Name : {}, \n \
-Categories : {}, {}, {} \n \
+Categories : {}, {}, {}, {}, {} \n \
 Store : {} \n \
 URL : {}'.format(product.name, product.category_1, product.category_2, \
-    product.category_3, product.stores, product.url))
+    product.category_3, product.category_4, product.category_5, product.stores, product.url))
 
 def main():
     """Main function of the program"""

@@ -57,10 +57,10 @@ def fill_food_table(url):
         try:
             food = cl.Food(data)
             food_properties = (food.name, food.category_1, food.category_2, \
-             food.category_3, food.stores, food.url)
+             food.category_3, food.category_4, food.category_5, food.stores, food.url)
             CURSOR.execute("INSERT INTO Food "\
-                "(name, category_id_1, category_id_2, category_id_3, stores, url)"\
-                "VALUES (%s, %s, %s, %s, %s, %s)", food_properties)
+                "(name, category_id_1, category_id_2, category_id_3, category_id_4, category_id_5, stores, url)"\
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", food_properties)
             DB.commit()
         except KeyError: #Don't take lignes without 'product_name'
             pass
@@ -79,17 +79,18 @@ def main():
     file_sql = open(CREATION_FILE, 'r')
     query = " ".join(file_sql.readlines())
     CURSOR.execute(query)
+    print("Database 'openfoodfacts' successfully created !")
 
-    try:
-        CURSOR.execute('USE openfoodfacts;')
-    except:
-        print('On saut l\'étape on verra si ça change quelque chose')
+    # try:
+    #     CURSOR.execute('USE openfoodfacts;')
+    # except:
+    #     print('On saut l\'étape on verra si ça change quelque chose')
 
     fill_categories_table(CATEGORIES_URL)
     for i in range(1, 7200): #7200 is approximatively the number of pages in french
         url_food = FOOD_URL+str(i)+'.json'
         fill_food_table(url_food)
-    print("Database 'openfoodfacts' successfully created !")
+    print("Database 'openfoodfacts' successfully completed !")
 
 
 if __name__ == "__main__":
