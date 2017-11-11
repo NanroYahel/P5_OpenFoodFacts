@@ -51,6 +51,10 @@ class Food():
             except IndexError:
                 self.category_5 = "None"
             try:
+                self.nutri_score = data_from_off['nutriments']['nutrition-score-fr_100g']
+            except KeyError:
+                self.nutri_score = ""
+            try:
                 self.stores = data_from_off['stores']
             except KeyError:
                 self.stores = ""
@@ -70,13 +74,14 @@ class Food():
             self.category_3 = data_from_off[4]
             self.category_4 = data_from_off[5]
             self.category_5 = data_from_off[6]
+            self.nutri_score = data_from_off[7]
             self.stores = ""
             try:
-                self.stores = data_from_off[7]
+                self.stores = data_from_off[8]
             except IndexError:
                 pass
             try:
-                self.url = data_from_off[8]
+                self.url = data_from_off[9]
             except IndexError:
-                self.url = data_from_off[7]
+                self.url = data_from_off[8]
             self.index = index

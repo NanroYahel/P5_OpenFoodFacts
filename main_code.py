@@ -30,7 +30,7 @@ def select_categories(dict_categories):
         else:
             format_user_search = "%" +user_search+ "%"
     #SQL request for categories
-    CURSOR.execute('USE openfoodfacts;')
+    CURSOR.execute('USE openfoodfacts_bis;')
     CURSOR.execute("""SELECT id, name \
         FROM Categories \
         WHERE name LIKE %s
@@ -49,9 +49,9 @@ def select_products(category):
     """Select 10 products in the database \
     containing the category chosed by the user"""
     category = '%' + category + '%'
-    CURSOR.execute('USE openfoodfacts;')
+    CURSOR.execute('USE openfoodfacts_bis;')
     CURSOR.execute("""SELECT id, name, category_id_1, category_id_2, category_id_3, \
-        category_id_4, category_id_5, stores, url \
+        category_id_4, category_id_5, nutri_score, stores, url \
         FROM Food \
         WHERE category_id_1 LIKE %s OR category_id_2 LIKE %s OR category_id_3 LIKE %s \
         OR category_id_4 LIKE %s OR category_id_5 LIKE %s
@@ -66,7 +66,7 @@ def add_favorite(product, substitute):
     print('2. No')
     choice = try_user_input(2)
     if choice == 1:
-        CURSOR.execute('USE openfoodfacts;')
+        CURSOR.execute('USE openfoodfacts_bis;')
         CURSOR.execute("""INSERT INTO Favorites (product_id, substitute_id) \
             VALUES (%s,%s)""", (product.id, substitute.id))
         DB.commit()
@@ -76,27 +76,24 @@ def add_favorite(product, substitute):
 
 def search_substitute(product):
     """Seach a correct substitute of the product in the database"""
-    CURSOR.execute('USE openfoodfacts;')
-    # #Catch the id of the category of the product
-    product_categories_name = (product.category_1, product.category_2, product.category_3, \
+    CURSOR.execute('USE openfoodfacts_bis;')
+    #Make a string with the categories, used in the query
+    search = (product.category_1, product.category_2, product.category_3, \
         product.category_4, product.category_5)
-    CURSOR.execute(""" SELECT id FROM Categories WHERE name IN %s""", (product_categories_name,))
-    id_category = CURSOR.fetchall()
-    #Make a string with the category, used in the query
-    search = (id_category[0][0], id_category[1][0], id_category[2][0], id_category[3][0],\
-     id_category[4][0])
     #Query
     product_name = product.name
+    product_score = product.nutri_score
     CURSOR.execute("""SELECT Food.id, Food.name, C1.name as category_1, C2.name as category_2, \
-        C3.name as category_3, C4.name as category_4, C5.name as category_5, stores, url \
+        C3.name as category_3, C4.name as category_4, C5.name as category_5, nutri_score, stores, url \
     FROM Food \
     INNER JOIN Categories C1 ON C1.id = Food.category_id_1 \
     INNER JOIN Categories C2 ON C2.id = Food.category_id_2 \
     INNER JOIN Categories C3 ON C3.id = Food.category_id_3 \
     INNER JOIN Categories C4 ON C4.id = Food.category_id_4 \
     INNER JOIN Categories C5 ON C5.id = Food.category_id_5 \
-    WHERE (C1.id IN %s OR C2.id IN %s OR C3.id IN %s OR C4.id IN %s OR C5.id IN %s) \
-    AND Food.name NOT LIKE %s""", (search, search, search, search, search, product_name))
+    WHERE (C1.name IN %s OR C2.name IN %s OR C3.name IN %s OR C4.name IN %s OR C5.name IN %s) \
+    AND Food.name NOT LIKE %s
+    AND Food.nutri_score = %s""", (search, search, search, search, search, product_name, product_score))
     substitute = CURSOR.fetchone()
     try:
         return cl.Food(substitute)
@@ -146,7 +143,7 @@ def find_substitute():
                 print('Try another.')
         choice = try_user_input(len(dict_categories))
         #Display a list of 10 (maximum) products contained in the chosen category
-        #Use has to chose one product
+        #User has to chose one product
         dict_product = display_products_list(select_products(dict_categories[choice][1]))
         if len(dict_product) == 0:
             print('\n There is no product for this category... \n')
@@ -169,7 +166,7 @@ def display_favorites():
     #List of favorites used for the function "select_favorite"
     favorites_dict = {}
     # for products in Count(requete nb product in the database)
-    CURSOR.execute('USE openfoodfacts;')
+    CURSOR.execute('USE openfoodfacts_bis;')
     # CURSOR.execute('SELECT COUNT(*) FROM Favorites;')
     # nb_favorites = CURSOR.fetchone()
     CURSOR.execute("""SELECT F1.name as Product, F2.name as Substitute \
@@ -200,9 +197,9 @@ def select_favorite(favorites_dict):
 def extract_product(product):
     """Take the name of a product and return an object
     containing the specifications of this product"""
-    CURSOR.execute("USE openfoodfacts;")
+    CURSOR.execute("USE openfoodfacts_bis;")
     CURSOR.execute("""SELECT Food.id, Food.name, C1.name AS Category_1, C2.name AS Category_2, \
-        C3.name AS Category_3, C4.name AS Category_4, C5.name AS Category_5, stores, url
+        C3.name AS Category_3, C4.name AS Category_4, C5.name AS Category_5, nutri_score, stores, url
         FROM Food
         INNER JOIN Categories C1 ON C1.id = Food.category_id_1
         INNER JOIN Categories C2 ON C2.id = Food.category_id_2
