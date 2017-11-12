@@ -30,7 +30,7 @@ def select_categories(dict_categories):
         else:
             format_user_search = "%" +user_search+ "%"
     #SQL request for categories
-    CURSOR.execute('USE openfoodfacts_bis;')
+    CURSOR.execute('USE openfoodfacts;')
     CURSOR.execute("""SELECT id, name \
         FROM Categories \
         WHERE name LIKE %s
@@ -49,7 +49,7 @@ def select_products(category):
     """Select 10 products in the database \
     containing the category chosed by the user"""
     category = '%' + category + '%'
-    CURSOR.execute('USE openfoodfacts_bis;')
+    CURSOR.execute('USE openfoodfacts;')
     CURSOR.execute("""SELECT id, name, category_id_1, category_id_2, category_id_3, \
         category_id_4, category_id_5, nutri_score, stores, url \
         FROM Food \
@@ -66,7 +66,7 @@ def add_favorite(product, substitute):
     print('2. No')
     choice = try_user_input(2)
     if choice == 1:
-        CURSOR.execute('USE openfoodfacts_bis;')
+        CURSOR.execute('USE openfoodfacts;')
         CURSOR.execute("""INSERT INTO Favorites (product_id, substitute_id) \
             VALUES (%s,%s)""", (product.id, substitute.id))
         DB.commit()
@@ -76,11 +76,11 @@ def add_favorite(product, substitute):
 
 def search_substitute(product):
     """Seach a correct substitute of the product in the database"""
-    CURSOR.execute('USE openfoodfacts_bis;')
+    CURSOR.execute('USE openfoodfacts;')
     #Make a string with the categories, used in the query
     search = (product.category_1, product.category_2, product.category_3, \
         product.category_4, product.category_5)
-    #Query
+    #Other variables of the request
     product_name = product.name
     product_score = product.nutri_score
     CURSOR.execute("""SELECT Food.id, Food.name, C1.name as category_1, C2.name as category_2, \
@@ -97,8 +97,9 @@ def search_substitute(product):
     substitute = CURSOR.fetchone()
     try:
         return cl.Food(substitute)
-    except TypeError:
-        pass
+    except TypeError :
+        print('Sorry, there is no substitute for this product...')
+
 
 def display_products_list(products):
     """Use the result of the products selection function and display it"""
@@ -135,6 +136,7 @@ def find_substitute():
     dict_categories = {}
     dict_product = {}
     #Display a list of 10 categories in which the user has to chose one
+    #Search product until one product is ok with the chosen category
     while len(dict_product) == 0:
         while dict_categories == {}:
             select_categories(dict_categories)
@@ -148,7 +150,7 @@ def find_substitute():
         if len(dict_product) == 0:
             print('\n There is no product for this category... \n')
             dict_categories = {}
-    #Search product until one product is ok with the chosen category
+
     choice = try_user_input(len(dict_product))
     product_chosen = extract_product(dict_product[choice])
     #Display the description of the chosen product
@@ -156,17 +158,20 @@ def find_substitute():
     print_product(product_chosen)
 
     #Search a substitute and display it
-    substitute = search_substitute(product_chosen)
     print('\n You can substitute this product by : \n')
-    print_product(substitute)
-    add_favorite(product_chosen, substitute)
+    substitute = search_substitute(product_chosen)
+    try : 
+        print_product(substitute)
+        add_favorite(product_chosen, substitute)
+    except AttributeError:
+        pass
 
 def display_favorites():
     """Display all the favorites of the user"""
     #List of favorites used for the function "select_favorite"
     favorites_dict = {}
     # for products in Count(requete nb product in the database)
-    CURSOR.execute('USE openfoodfacts_bis;')
+    CURSOR.execute('USE openfoodfacts;')
     # CURSOR.execute('SELECT COUNT(*) FROM Favorites;')
     # nb_favorites = CURSOR.fetchone()
     CURSOR.execute("""SELECT F1.name as Product, F2.name as Substitute \
@@ -187,7 +192,9 @@ def display_favorites():
 def select_favorite(favorites_dict):
     """Display the information of the product and the substitute"""
     choice = try_user_input(len(favorites_dict))
+    #Extract the specifitions of the product to display it
     product = extract_product(favorites_dict[choice][0])
+    #Extract the specifitions of the substitute to display it
     substitute = extract_product(favorites_dict[choice][1])
     print_product(product)
     print('\n You can substitute this product by : \n')
@@ -197,7 +204,7 @@ def select_favorite(favorites_dict):
 def extract_product(product):
     """Take the name of a product and return an object
     containing the specifications of this product"""
-    CURSOR.execute("USE openfoodfacts_bis;")
+    CURSOR.execute("USE openfoodfacts;")
     CURSOR.execute("""SELECT Food.id, Food.name, C1.name AS Category_1, C2.name AS Category_2, \
         C3.name AS Category_3, C4.name AS Category_4, C5.name AS Category_5, nutri_score, stores, url
         FROM Food
@@ -215,7 +222,7 @@ def extract_product(product):
 def print_product(product):
     """Take a product (object) and print his specifications"""
     print('\n \
-Name : {}, \n \
+Name : {} \n \
 Categories : {}, {}, {}, {}, {} \n \
 Store : {} \n \
 URL : {}'.format(product.name, product.category_1, product.category_2, \

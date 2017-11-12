@@ -14,6 +14,7 @@ CREATE TABLE Food(
 	category_id_3 VARCHAR(300),
 	category_id_4 VARCHAR(300),
 	category_id_5 VARCHAR(300),
+	nutri_score INT,
 	stores VARCHAR(150),
 	url VARCHAR(400),
 	PRIMARY KEY(id)
